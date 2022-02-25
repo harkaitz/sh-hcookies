@@ -1,0 +1,110 @@
+#!/bin/sh -e
+#L:
+#L:  MIT License
+#L:  
+#l:  Bug reports, feature requests to gemini|https://harkadev.com/oss
+#l:  Copyright (c) 2022 Harkaitz Agirre, harkaitz.aguirre@gmail.com
+#L:
+#L:  Permission is hereby granted, free of charge, to any person obtaining
+#L:  a copy of this software and associated documentation files (the
+#L:  "Software"), to deal in the Software without restriction, including
+#L:  without limitation the rights to use, copy, modify, merge, publish,
+#L:  distribute, sublicense, and/or sell copies of the Software, and to
+#L:  permit persons to whom the Software is furnished to do so, subject to
+#L:  the following conditions:
+#L:
+#L:  The above copyright notice and this permission notice shall be
+#L:  included in all copies or substantial portions of the Software.
+#L:
+#L:  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+#L:  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+#L:  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+#L:  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+#L:  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+#L:  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+#L:  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#r: ## HCOOKIES
+#r:
+#h: Usage: $0 ...
+#h:
+#h: This script helps extracting cookies from `Mozilla Firefox` based
+#h: web browsers. Then you can use wget with --load-cookies and --save-cookies.
+#h:
+#h: -L : List browser cookie files.
+#h: -W : Print cookies in `wget` format.
+#h: -E : Print cookies in `emacs` format.
+#h: -w : Save cookies in `wget` format in ~/.cookies
+#h: -e : Save cookies in `emacs` format in ~/.emacs.d/url/cookies.
+#r:
+hcookies() {
+    ##
+    local OPTIND optopt= ops=
+    while getopts "LWEwe" optopt;do # OPTARG
+        local ops="${ops}${optopt}"
+        case $optopt in
+            \?) return 1;;
+        esac
+    done
+    shift $(( $OPTIND - 1 ))
+    ##
+    case "${ops}" in *L*) hcookies_list_browser_directories          ;; esac
+    case "${ops}" in *W*) hcookies_print_in_wget_format              ;; esac
+    case "${ops}" in *E*) hcookies_print_in_emacs_format             ;; esac
+    case "${ops}" in *w*) hcookies_print_in_wget_format > ~/.cookies ;; esac
+    case "${ops}" in
+        *e*) if test -d ~/.emacs.d;then
+                 mkdir -p ~/.emacs.d/url
+                 hcookies_print_in_emacs_format > ~/.emacs.d/url/cookies
+             fi;;
+    esac
+}
+## -----------------------------------------------------------------------
+hcookies_list_browser_directories() {
+    if test -d "${HOME}/.mozilla/firefox";then
+        find "${HOME}/.mozilla/firefox" -maxdepth 2 -type f -name cookies.sqlite
+    fi
+}
+hcookies_print_in_wget_format() {
+    local t="/tmp/cookies.$$.sqlite"
+    for f in `hcookies_list_browser_directories`;do
+        cp "${f}" "${t}"
+        sqlite3 -separator $'\t' "${t}" <<- EOF
+.mode tabs
+.header off
+        select host,
+        case substr(host,1,1)='.' when 0 then 'FALSE' else 'TRUE' end,
+        path,
+        case isSecure when 0 then 'FALSE' else 'TRUE' end,
+        expiry,
+        name,
+        value
+        from moz_cookies;
+EOF
+    done
+}
+hcookies_print_in_emacs_format() {
+    local t="/tmp/cookies.$$.txt"
+    hcookies_print_in_wget_format > "${t}"
+    echo "(setq url-cookie-storage '("
+    for h in `cut -f 1 "${t}"`;do
+        echo "  (\"${h}\""
+        sed -n "s|^${h}\\s||p" "${t}" \
+            | awk -v h="${h}" \
+                  '{printf "     [url-cookie \"%s\" nil \"01-Jan-2055 00:00:00.00 GMT\" \"/\" \"%s\" nil]\n",$5,h}'
+        echo "  )"
+    done
+    echo "))"
+}
+
+
+
+## -----------------------------------------------------------------------
+if test @"`basename "$0"`" = @"hcookies";then
+    if test -n "$1";then
+        hcookies "$@"
+    else
+        sed -n 's/^ *#h: \{0,1\}//p' "$0" | sed "s|\\\$0|`basename $0`|g"
+        echo ""
+        sed -n 's/^ *#l: \{0,2\}//p' "$0"
+    fi
+fi
