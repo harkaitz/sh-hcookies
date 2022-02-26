@@ -23,8 +23,7 @@
 #L:  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 #L:  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 #L:  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#r: ## HCOOKIES
-#r:
+##:
 #h: Usage: $0 ...
 #h:
 #h: This script helps extracting cookies from `Mozilla Firefox` based
@@ -35,7 +34,7 @@
 #h: -E : Print cookies in `emacs` format.
 #h: -w : Save cookies in `wget` format in ~/.cookies
 #h: -e : Save cookies in `emacs` format in ~/.emacs.d/url/cookies.
-#r:
+##:
 hcookies() {
     ##
     local OPTIND optopt= ops=

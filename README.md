@@ -6,7 +6,7 @@ authentications.
 
 ## Help
 
-## HCOOKIES
+hcookies
 
     Usage: hcookies ...
     
@@ -18,7 +18,6 @@ authentications.
     -E : Print cookies in `emacs` format.
     -w : Save cookies in `wget` format in ~/.cookies
     -e : Save cookies in `emacs` format in ~/.emacs.d/url/cookies.
-
 
 ## Collaborating
 
